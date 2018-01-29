@@ -89,7 +89,7 @@ def model_validation(dataset, model_type, estimator, parameters, x_train, y_trai
     ax.set_ylabel('Mean Cross Validation Accuracy (%)')
     ax.set_xlabel('Combinations of hyperparameters: '+key1+"/"+key2)
     indices = np.arange(1, len(x_labels)*width*2+1, width*2)
-    bar = ax.bar(indices, means, width, alpha =0.6, label='Accuracy')#, yerr=stds)
+    bar = ax.bar(indices, means, width, alpha =0.6, label='Accuracy', yerr=stds)
     plt.xticks(indices+width/2)
     ax.set_xticklabels(x_labels, rotation=45, fontsize=fontsize)
     ax.yaxis.grid()
@@ -238,18 +238,18 @@ if __name__=='__main__':
         generate_learning_curve(dataset1, name, model, x_train, y_train)
 
     ### second dataset
-    #dataset2 = 'agaricus-lepiota.data'
     dataset2 = 'tic-tac-toe.data'
     print("-----------------------------------Dataset 2--------------------------------------")
     x, y = load_data2(dataset2,attributes=10)
     x_train, x_test, y_train, y_test = split_train_test(x, y, 0.2)
 #    print('x_train: {} \ny_train: {} \nx_test: {} \ny_test: {}'.format(x_train, y_train, x_test, y_test))
 
-#    nn_validation(dataset2, x_train, y_train, x_test, y_test)
-#    svm_validation(dataset2, x_train, y_train, x_test, y_test)
-#    dt_validation(dataset2, x_train, y_train, x_test, y_test)
-#    knn_validation(dataset2, x_train, y_train, x_test, y_test)
-#    boost_validation(dataset2, x_train, y_train, x_test, y_test, minss=2, maxd=1)
+    nn_validation(dataset2, x_train, y_train, x_test, y_test)
+    svm_validation(dataset2, x_train, y_train, x_test, y_test)
+    dt_validation(dataset2, x_train, y_train, x_test, y_test)
+    knn_validation(dataset2, x_train, y_train, x_test, y_test)
+    boost_validation(dataset2, x_train, y_train, x_test, y_test, minss=2, maxd=1)
+#    boost_validation(dataset2, x_train, y_train, x_test, y_test, minss=2, maxd=None)
     #boost_validation(dataset2, x_train, y_train, x_test, y_test, minss=8, maxd=61)
 
     models = []
@@ -258,10 +258,10 @@ if __name__=='__main__':
     models.append(('DecisionTree', DecisionTreeClassifier(max_depth=1, min_samples_split=2)))
     models.append(('Boost', AdaBoostClassifier(n_estimators=61, learning_rate=1.0, base_estimator=DecisionTreeClassifier(min_samples_split=2, max_depth=1))))
     models.append(('KNN', KNeighborsClassifier(n_neighbors=9, weights='uniform')))
-#    compare_algorithms_precision(dataset2, models, x_train, y_train, x_test, y_test)
-#    compare_algorithms(dataset2, models, x_train, y_train, x_test, y_test)
-#    for name, model in models:
-#        generate_learning_curve(dataset2, name, model, x_train, y_train)
+    compare_algorithms_precision(dataset2, models, x_train, y_train, x_test, y_test)
+    compare_algorithms(dataset2, models, x_train, y_train, x_test, y_test)
+    for name, model in models:
+        generate_learning_curve(dataset2, name, model, x_train, y_train)
 
     ### second dataset
 
