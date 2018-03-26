@@ -1,8 +1,11 @@
 from data_prep import *
 from sklearn import metrics
 import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
 import numpy as np
 import pandas as pd
+import pickle
+from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
@@ -45,31 +48,43 @@ def clustering(dataset, x, y, ks):
     ss_em = []
     vms_em = []
     for k in ks:
-        kmeans = KMeans(n_clusters=k, n_init=10, random_state=10)
-        kmeans.fit(x)
-        ss_km.append(metrics.silhouette_score(x, kmeans.labels_))
+        scaler = StandardScaler(with_mean=False)
+        X = scaler.fit_transform(x)
+        kmeans = KMeans(n_clusters=k)#, random_state=20, n_init=20)
+        kmeans.fit(X)
+        ss_km.append(metrics.silhouette_score(X, kmeans.labels_))
         ars_km.append(metrics.adjusted_rand_score(y, kmeans.labels_))
         vms_km.append(metrics.v_measure_score(y, kmeans.labels_))
-        em = GaussianMixture(n_components=k, n_init=10, random_state=10)
+        em = GaussianMixture(n_components=k)#, random_state=20, n_init=20)
         em.fit(x)
         pred_labels_em = em.predict(x)
         ss_em.append(metrics.silhouette_score(x, pred_labels_em))
         ars_em.append(metrics.adjusted_rand_score(y, pred_labels_em))
         vms_em.append(metrics.v_measure_score(y, pred_labels_em))
+#        fnamek = 'output/exp1_km_'+str(k)
+#        with open(fnamek, 'wb') as f:
+#            pickle.dump([kmeans, x, y], f)
+#        fnamee = 'output/exp1_em_'+str(k)
+#        with open(fnamee, 'wb') as f:
+#            pickle.dump([em, x, y], f)
+
     d = {'k value' : ks,
          'Kmeans_silh' : ss_km,
-         'Kmeans_vmeas' : vms_km,
-         'Kmeans_adj_rand' : ars_km,
          'EM_silh' : ss_em,
+         'Kmeans_vmeas' : vms_km,
          'EM_vmeas' : vms_em,
+         'Kmeans_adj_rand' : ars_km,
          'EM_adj_rand' : ars_em}
     df = pd.DataFrame(d)
     df.set_index('k value', inplace=True)
+    #print(df)
     styles = ['rs-', 'ro-', 'r^-', 'bs-', 'bo-', 'b^-']
+    fontP = FontProperties()
+    fontP.set_size('small')
     filename = dataset+"_clustering_tests"
     plt.figure()
     df.plot(title='Kmeans_EM Comparisons for '+dataset, style=styles)
-    plt.legend(loc='best')
+    plt.legend(loc='best', prop=fontP)
     plt.savefig(filename)
 
 if __name__=='__main__':
