@@ -1,0 +1,6 @@
+*.pyc
+__pycache__/
+proj1/
+*.swp
+*.py~
+*.txt~

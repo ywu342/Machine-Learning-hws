@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 import numpy as np
 import pandas as pd
-import pickle
+from scipy.stats import kurtosis
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import scale
@@ -98,10 +98,10 @@ def dimension_reduction(dataset, x, y, ns):
         #print('pca - reduced X: {0}'.format(reduced_X))
 
         ica = FastICA(n_components=n)
-        reduced_X = ica.fit_transform(X)
-        reconstructed_X = ica.inverse_transform(reduced_X)
-        error = np.linalg.norm((X-reconstructed_X), None)
-        rec_errs_ica.append(error)
+        ica_reduced_X = ica.fit_transform(X)
+        ica_reconstructed_X = ica.inverse_transform(ica_reduced_X)
+        ica_error = np.linalg.norm((X-ica_reconstructed_X), None)
+        rec_errs_ica.append(ica_error)
         #print('ica - reduced X: {0}'.format(reduced_X))
 
         grp = GaussianRandomProjection(n_components=n)
@@ -111,9 +111,6 @@ def dimension_reduction(dataset, x, y, ns):
         error = np.linalg.norm((X-reconstructed_X), None)
         rec_errs_rp.append(error)
 
-#        skb = SelectKBest(mutual_info_classif, k=n)
-#        reduced_X = skb.fit_transform(X, y)
-#        reconstructed_X = skb.inverse_transform(reduced_X)
         lda = LinearDiscriminantAnalysis(n_components=n)
         reduced_X = lda.fit_transform(X, y)
         pinv = np.linalg.pinv(lda.scalings_[:, 0:n])
@@ -140,9 +137,43 @@ def dimension_reduction(dataset, x, y, ns):
     plt.legend(loc='best', prop=fontP)
     plt.savefig(filename)
 
+    eig_vals = np.linalg.eigvals(pca.get_covariance())
+    var_exp = pca.explained_variance_ratio_
+    print('Eigenvalues:')
+    print('{}'.format(eig_vals))
+#    print('Explained variance (%):')
+#    print('{}'.format(var_exp))
+    cum_var_exp = np.cumsum(var_exp)
+    plt.figure()
+    plt.title('PCA generated principal components: all features in '+dataset)
+    plt.bar(np.array(range(len(var_exp)))+1, var_exp, color='b', alpha=0.5, align='center',
+            label='individual explained variance')
+    plt.bar(np.array(range(len(eig_vals)))+1, eig_vals, color='r', alpha=0.3, align='center',
+            label='individual eigen value')
+    plt.step(np.array(range(len(var_exp)))+1, cum_var_exp, where='mid',
+             label='cumulative explained variance')
+    plt.xlabel('Principal components')
+    fontP = FontProperties()
+    fontP.set_size('small')
+    plt.legend(loc='best', prop=fontP)
+    plt.tight_layout()
+    plt.savefig(dataset+"_pca_var_exp")
+
+    ica_kurtos = kurtosis(ica_reduced_X, fisher=False)
+    print('ICA kurtosis: {}'.format(ica_kurtos))
+#    plt.figure()
+#    plt.title('ICA generated principal components: all features in '+dataset)
+#    plt.bar(range(len(ica_kurtos)), ica_kurtos, alpha=0.5, align='center',
+#            label='individual kurtosis')
+#    plt.ylabel('Kurtosis')
+#    plt.xlabel('Principal components')
+#    plt.legend(loc='best')
+#    plt.tight_layout()
+#    plt.savefig(dataset+"_ica_kurt")
+
 if __name__=='__main__':
     np.random.seed(42)
-    dataset1 = 'car.data'
+    dataset1 = 'car.data' # 6 attributes 4 classes
     print("-----------------------------------Dataset 1--------------------------------------")
     x, y = load_data(dataset1)
     x_train, x_test, y_train, y_test = split_train_test(x, y, 0.3)
@@ -150,13 +181,13 @@ if __name__=='__main__':
     
     print("--------------------------Experiment 1------------------------------")
     ks = [2,3,4,5,6,7]
-    clustering(dataset1, x, y, ks)
+#    clustering(dataset1, x, y, ks)
 
     print("--------------------------Experiment 2------------------------------")
-    ns = [1,2,3,4,5]
+    ns = [1,2,3,4,5,6]
     dimension_reduction(dataset1, x, y, ns)
 
-    dataset2 = 'tic-tac-toe.data'
+    dataset2 = 'tic-tac-toe.data' # 9 attributes 2 classes
     print("-----------------------------------Dataset 2--------------------------------------")
     x, y = load_data2(dataset2,attributes=10)
     x_train, x_test, y_train, y_test = split_train_test(x, y, 0.2)
@@ -164,9 +195,9 @@ if __name__=='__main__':
 
     print("--------------------------Experiment 1------------------------------")
     ks = [2,3,4,5]
-    clustering(dataset2, x, y, ks)
+#    clustering(dataset2, x, y, ks)
 
     print("--------------------------Experiment 2------------------------------")
-    ns = [1,2,3,4,5,6,7,8]
+    ns = [1,2,3,4,5,6,7,8,9]
     dimension_reduction(dataset2, x, y, ns)
 
