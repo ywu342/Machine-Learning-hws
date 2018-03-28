@@ -14,8 +14,6 @@ from sklearn.decomposition import PCA
 from sklearn.decomposition import FastICA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.mixture import GaussianMixture
-from sklearn.feature_selection import SelectKBest
-from sklearn.feature_selection import mutual_info_classif
 
 def plot_curves(title, df, xlabel, ylabel, styles, filename, flag=False, dotline=0, line_label='', show100=False):
     colors = plt.cm.rainbow(np.linspace(1, 0, len(Y)))
@@ -55,9 +53,9 @@ def clustering(dataset, x, y, ks):
         ss_km.append(metrics.silhouette_score(X, kmeans.labels_))
         ars_km.append(metrics.adjusted_rand_score(y, kmeans.labels_))
         vms_km.append(metrics.v_measure_score(y, kmeans.labels_))
-        em = GaussianMixture(n_components=k)#, random_state=20, n_init=20)
-        
+
         x = X
+        em = GaussianMixture(n_components=k)#, random_state=20, n_init=20)        
         em.fit(x)
         pred_labels_em = em.predict(x)
         ss_em.append(metrics.silhouette_score(x, pred_labels_em))
@@ -137,13 +135,15 @@ def dimension_reduction(dataset, x, y, ns):
     plt.legend(loc='best', prop=fontP)
     plt.savefig(filename)
 
-    eig_vals = np.linalg.eigvals(pca.get_covariance())
-    var_exp = pca.explained_variance_ratio_
+    eig_vals = sorted(np.linalg.eigvals(pca.get_covariance()), reverse=True)
+    tot = sum(eig_vals)
+    #var_exp = pca.explained_variance_ratio_
+    var_exp = [(i / tot)*100 for i in eig_vals]
+    cum_var_exp = np.cumsum(var_exp)
     print('Eigenvalues:')
     print('{}'.format(eig_vals))
-#    print('Explained variance (%):')
-#    print('{}'.format(var_exp))
-    cum_var_exp = np.cumsum(var_exp)
+    print('Explained variance (%):')
+    print('{}'.format(var_exp))
     plt.figure()
     plt.title('PCA generated principal components: all features in '+dataset)
     plt.bar(np.array(range(len(var_exp)))+1, var_exp, color='b', alpha=0.5, align='center',
