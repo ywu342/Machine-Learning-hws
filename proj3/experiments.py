@@ -395,4 +395,5 @@ if __name__=='__main__':
     print("--------------------------Experiment 3------------------------------")
     X = scaler.fit_transform(x)
 #    exp3(dataset2, 2, X, y, ns)
-#    plot_pro_2(X, y, PCA, 'PCA')
+    plot_pro_2(X, y, PCA, 'PCA')
+    plot_pro_2(X, y, GaussianRandomProjection, 'Randomized Projection')
