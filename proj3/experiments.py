@@ -1,4 +1,5 @@
 from data_prep import *
+import time
 from sklearn import metrics
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
@@ -159,25 +160,6 @@ def dimension_reduction(dataset, x, y, ns):
     ica_kurtos = kurtosis(ica_reduced_X, fisher=False)
     print('ICA kurtosis: {}'.format(ica_kurtos))
 
-#    grp = GaussianRandomProjection(n_components=4)
-#    rec_errs_rp = []
-#    reduced_X = X
-#    for i in range(30):
-#        reduced_X = grp.fit_transform(X)
-#        if i==9 or i==19 or i==29:
-#            pinv = np.linalg.pinv(grp.components_)
-#            reconstructed_X = np.dot(reduced_X, pinv.T)
-#            error = np.linalg.norm((X-reconstructed_X), None)
-#            rec_errs_rp.append(error)
-#    plt.figure()
-#    plt.title('RP generated principal components: 4 features in '+dataset)
-#    plt.bar([10, 20, 30], rec_errs_rp, alpha=0.5, align='center',
-#            label='Reconstruction error')
-#    plt.xlabel('Number of times RP was run')
-#    plt.legend(loc='best')
-#    plt.tight_layout()
-#    plt.savefig(dataset+"_rp")
-
 def exp3(dataset, n_classes, x, y, ns):
     algorithms = (PCA, FastICA, GaussianRandomProjection, LinearDiscriminantAnalysis)
     ars_pca_km = []
@@ -198,12 +180,9 @@ def exp3(dataset, n_classes, x, y, ns):
     ars_em = [metrics.adjusted_rand_score(y, pred_labels_em)] * len(ns)
     for n in ns:
         for (alg, ars) in zip(algorithms, km_arss):
-#            km = KMeans(n_clusters=n_classes)
             algorithm = alg(n_components=n)
             reduced_x = algorithm.fit_transform(x, y)
             pred_y = km.fit_predict(reduced_x)
-            #ars.append(metrics.adjusted_mutual_info_score(y, pred_y))
-            #ars.append(metrics.adjusted_rand_score(y, pred_y))
             ars.append(metrics.v_measure_score(y, pred_y))
     d = {'Number of components to keep' : ns,
          'Unreduced' : ars_km,
@@ -225,13 +204,10 @@ def exp3(dataset, n_classes, x, y, ns):
 
     for n in ns:
         for (alg, ars) in zip(algorithms, em_arss):
-    #        em = GaussianMixture(n_components=n_classes)
             algorithm = alg(n_components=n)
             reduced_x = algorithm.fit_transform(x, y)
             em.fit(reduced_x)
             pred_y = em.predict(reduced_x)
-            #ars.append(metrics.adjusted_mutual_info_score(y, pred_y))
-            #ars.append(metrics.adjusted_rand_score(y, pred_y))
             ars.append(metrics.v_measure_score(y, pred_y))
     d = {'Number of components to keep' : ns,
          'Unreduced' : ars_em,
@@ -353,6 +329,100 @@ def plot_pro_2(x, y, alg, alg_name):
     plt.grid()
     plt.savefig("ttt_cluster_proj_"+alg_name)
 
+def exp4(dataset, x_train, x_test, y_train, y_test, ns):
+    algorithms = (PCA, FastICA, GaussianRandomProjection, LinearDiscriminantAnalysis)
+    alg_names = ('PCA', 'ICA', 'Randomized Projection', 'Linear Discriminant Analysis')
+    d_train_errors = {'Number of components to keep' : ns,
+         'Unreduced' : [],
+         'PCA' : [],
+         'ICA' : [],
+         'Randomized Projection' : [],
+         'Linear Discriminant Analysis' : []}
+    d_test_errors = {'Number of components to keep' : ns,
+         'Unreduced' : [],
+         'PCA' : [],
+         'ICA' : [],
+         'Randomized Projection' : [],
+         'Linear Discriminant Analysis' : []}
+    d_train_times = {'Number of components to keep' : ns,
+         'Unreduced' : [],
+         'PCA' : [],
+         'ICA' : [],
+         'Randomized Projection' : [],
+         'Linear Discriminant Analysis' : []}
+    d_test_times = {'Number of components to keep' : ns,
+         'Unreduced' : [],
+         'PCA' : [],
+         'ICA' : [],
+         'Randomized Projection' : [],
+         'Linear Discriminant Analysis' : []}
+
+    nn = MLPClassifier()
+    trstart_time = time.time()
+    nn.fit(x_train, y_train)
+    d_train_times['Unreduced'] = [time.time() - trstart_time] * len(ns)
+    tsstart_time = time.time()
+    pred_test = nn.predict(x_test)
+    d_test_times['Unreduced'] = [time.time()-tsstart_time] * len(ns)
+    pred_train= nn.predict(x_train)
+    d_train_errors['Unreduced'] = [metrics.accuracy_score(y_train, pred_train)] * len(ns)
+    d_test_errors['Unreduced'] =[metrics.accuracy_score(y_test, pred_test)] * len(ns)
+    for (alg, name) in zip(algorithms, alg_names):
+        for n in ns:
+            algorithm = alg(n_components=n)
+            reduced_x = algorithm.fit_transform(x_train, y_train)
+            reduced_x_tst = algorithm.fit_transform(x_test, y_test)
+            nn = MLPClassifier()
+            trstart_time = time.time()
+            nn.fit(reduced_x, y_train)
+            d_train_times[name].append(time.time() - trstart_time)
+            tsstart_time = time.time()
+            pred_test = nn.predict(reduced_x_tst)
+            d_test_times[name].append(time.time()-tsstart_time)
+            pred_train= nn.predict(reduced_x)
+            d_train_errors[name].append(metrics.accuracy_score(y_train, pred_train))
+            d_test_errors[name].append(metrics.accuracy_score(y_test, pred_test))
+    df_train_errors = pd.DataFrame(d_train_errors)
+    df_train_errors.set_index('Number of components to keep', inplace=True)
+    df_test_errors = pd.DataFrame(d_test_errors)
+    df_test_errors.set_index('Number of components to keep', inplace=True)
+    df_train_times = pd.DataFrame(d_train_times)
+    df_train_times.set_index('Number of components to keep', inplace=True)
+    df_test_times = pd.DataFrame(d_test_times)
+    df_test_times.set_index('Number of components to keep', inplace=True)
+    #print(df_train_errors)
+    #print(df_test_errors)
+    #print(df_train_times)
+    #print(df_test_times)
+
+    styles = ['p-', 's-', 'o-', '^-','k--']
+    filename = dataset+"_exp4"
+    plt.figure(figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+
+    fontP = FontProperties()
+    fontP.set_size('xx-small')
+    df_train_errors.plot(ax=axes[0,0], style=styles)
+    axes[0,0].set_ylabel("Training Accuracy")
+    df_test_errors.plot(ax=axes[0,1], style=styles)
+    axes[0,1].set_ylabel("Testing Accuracy")
+    df_train_times.plot(ax=axes[1,0], style=styles)
+    axes[1,0].set_ylabel("Training Time")
+    df_test_times.plot(ax=axes[1,1], style=styles)
+    axes[1,1].set_ylabel("Testing Time")
+
+    axes[0,0].legend_.set_visible(False)
+    axes[0,1].legend_.set_visible(False)
+    axes[1,1].legend_.set_visible(False)
+    axes[1,0].legend_.set_visible(False)
+    handles, labels = axes[0,0].get_legend_handles_labels()
+    plt.figlegend(handles=handles, labels=labels, loc='upper right', prop=fontP)
+
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.85)
+    plt.suptitle('NN on Reduced Data for '+dataset)
+    plt.savefig(filename)
+
 if __name__=='__main__':
     np.random.seed(42)
     dataset1 = 'car.data' # 6 attributes 4 classes
@@ -360,7 +430,7 @@ if __name__=='__main__':
     x, y = load_data(dataset1)
     x_train, x_test, y_train, y_test = split_train_test(x, y, 0.3)
     dataset1 = dataset1.replace('.', '_')
-    print(y)
+#    print(y)
     
     print("--------------------------Experiment 1------------------------------")
     ks = [2,3,4,5,6,7]
@@ -374,8 +444,9 @@ if __name__=='__main__':
     scaler = StandardScaler(with_mean=False)
     X = scaler.fit_transform(x)
 #    exp3(dataset1, 4, X, y, ns)
-    plot_pro_1(X, y, LinearDiscriminantAnalysis ,'LDA')
-    plot_pro_1(X, y, PCA ,'PCA')
+#    plot_pro_1(X, y, LinearDiscriminantAnalysis ,'LDA')
+#    plot_pro_1(X, y, PCA ,'PCA')
+
 
     dataset2 = 'tic-tac-toe.data' # 9 attributes 2 classes
     print("-----------------------------------Dataset 2--------------------------------------")
@@ -395,5 +466,11 @@ if __name__=='__main__':
     print("--------------------------Experiment 3------------------------------")
     X = scaler.fit_transform(x)
 #    exp3(dataset2, 2, X, y, ns)
-    plot_pro_2(X, y, PCA, 'PCA')
-    plot_pro_2(X, y, GaussianRandomProjection, 'Randomized Projection')
+#    plot_pro_2(X, y, PCA, 'PCA')
+#    plot_pro_2(X, y, GaussianRandomProjection, 'Randomized Projection')
+
+    
+    print("-----------------------------------Experiment 4--------------------------------------")
+    X_train = scaler.fit_transform(x_train)
+    X_test = scaler.fit_transform(x_test)
+    exp4(dataset2, x_train, x_test, y_train, y_test, ns) 
