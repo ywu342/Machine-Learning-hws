@@ -269,7 +269,7 @@ def plot_pro_1(x, y, alg, alg_name):
            cmap=plt.cm.Paired,
            aspect='auto', origin='lower')
     ax = plt.subplot(111)
-    label_dict = {0:'unacc', 1:'acc', 2:'good', 3:'vgood'}
+    label_dict = {2:'unacc', 0:'acc', 1:'good', 3:'vgood'}
     for label,marker,color in zip(
         range(0,4),('*', '^', 's', 'o'),('k','blue', 'red', 'green')):
 
@@ -360,6 +360,7 @@ if __name__=='__main__':
     x, y = load_data(dataset1)
     x_train, x_test, y_train, y_test = split_train_test(x, y, 0.3)
     dataset1 = dataset1.replace('.', '_')
+    print(y)
     
     print("--------------------------Experiment 1------------------------------")
     ks = [2,3,4,5,6,7]
@@ -372,24 +373,26 @@ if __name__=='__main__':
     print("--------------------------Experiment 3------------------------------")
     scaler = StandardScaler(with_mean=False)
     X = scaler.fit_transform(x)
-    exp3(dataset1, 4, X, y, ns)
+#    exp3(dataset1, 4, X, y, ns)
     plot_pro_1(X, y, LinearDiscriminantAnalysis ,'LDA')
+    plot_pro_1(X, y, PCA ,'PCA')
 
     dataset2 = 'tic-tac-toe.data' # 9 attributes 2 classes
     print("-----------------------------------Dataset 2--------------------------------------")
     x, y = load_data(dataset2,attributes=10)
     x_train, x_test, y_train, y_test = split_train_test(x, y, 0.2)
     dataset2 = dataset2.replace('.', '_')
+#    print(y)
 
     print("--------------------------Experiment 1------------------------------")
     ks = [2,3,4,5]
-    clustering(dataset2, x, y, ks)
+#    clustering(dataset2, x, y, ks)
 
     print("--------------------------Experiment 2------------------------------")
     ns = [1,2,3,4,5,6,7,8,9]
-    dimension_reduction(dataset2, x, y, ns)
+#    dimension_reduction(dataset2, x, y, ns)
 
     print("--------------------------Experiment 3------------------------------")
     X = scaler.fit_transform(x)
-    exp3(dataset2, 2, X, y, ns)
-    plot_pro_2(X, y, PCA, 'PCA')
+#    exp3(dataset2, 2, X, y, ns)
+#    plot_pro_2(X, y, PCA, 'PCA')
