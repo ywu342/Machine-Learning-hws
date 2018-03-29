@@ -251,6 +251,108 @@ def exp3(dataset, n_classes, x, y, ns):
     plt.legend(loc='best', prop=fontP)
     plt.savefig(filename)
 
+def plot_pro_1(x, y, alg, alg_name):
+    pca = alg(n_components=2)
+    reduced_x = pca.fit_transform(x,y)
+    kmeans = KMeans(n_clusters=4)
+    kmeans.fit(reduced_x)
+    h = .02
+    x_min, x_max = reduced_x[:, 0].min() - 1, reduced_x[:, 0].max() + 1
+    y_min, y_max = reduced_x[:, 1].min() - 1, reduced_x[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+    Z = kmeans.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    plt.figure()
+    plt.clf()
+    plt.imshow(Z, interpolation='nearest',
+           extent=(xx.min(), xx.max(), yy.min(), yy.max()),
+           cmap=plt.cm.Paired,
+           aspect='auto', origin='lower')
+    ax = plt.subplot(111)
+    label_dict = {0:'unacc', 1:'acc', 2:'good', 3:'vgood'}
+    for label,marker,color in zip(
+        range(0,4),('*', '^', 's', 'o'),('k','blue', 'red', 'green')):
+
+        plt.scatter(x=reduced_x[:,0][y == label],
+                y=reduced_x[:,1][y == label],
+                marker=marker,
+                color=color,
+                alpha=0.5,
+                label=label_dict[label]
+                )
+    centroids = kmeans.cluster_centers_
+    plt.scatter(centroids[:, 0], centroids[:, 1],
+            marker='x', s=169, linewidths=3,
+            color='w', zorder=10)
+    plt.xlim(x_min, x_max)
+    plt.ylim(y_min, y_max)
+    plt.xlabel('Component 1')
+    plt.ylabel('Component 2')
+    fontP = FontProperties()
+    fontP.set_size('small')
+    leg = plt.legend(loc='best', prop=fontP)
+    leg.get_frame().set_alpha(0.5)
+    plt.title(alg_name+': Car projection onto the first 2 principal components')
+    # remove axis spines
+    ax.spines["top"].set_visible(False)  
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)    
+    plt.tight_layout
+    plt.grid()
+    plt.savefig("car_cluster_proj_"+alg_name)
+
+def plot_pro_2(x, y, alg, alg_name):
+    pca = alg(n_components=2)
+    reduced_x = pca.fit_transform(x,y)
+    kmeans = KMeans(n_clusters=2)
+    kmeans.fit(reduced_x)
+    h = .02
+    x_min, x_max = reduced_x[:, 0].min() - 1, reduced_x[:, 0].max() + 1
+    y_min, y_max = reduced_x[:, 1].min() - 1, reduced_x[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+    Z = kmeans.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    plt.figure()
+    plt.clf()
+    plt.imshow(Z, interpolation='nearest',
+           extent=(xx.min(), xx.max(), yy.min(), yy.max()),
+           cmap=plt.cm.Paired,
+           aspect='auto', origin='lower')
+    ax = plt.subplot(111)
+    label_dict = {1:'positive', 0:'negative'}
+    for label,marker,color in zip(
+        range(0,2),('*', '^'),('k','blue')):
+
+        plt.scatter(x=reduced_x[:,0][y == label],
+                y=reduced_x[:,1][y == label],
+                marker=marker,
+                color=color,
+                alpha=0.5,
+                label=label_dict[label]
+                )
+    centroids = kmeans.cluster_centers_
+    plt.scatter(centroids[:, 0], centroids[:, 1],
+            marker='x', s=169, linewidths=3,
+            color='w', zorder=10)
+    plt.xlim(x_min, x_max)
+    plt.ylim(y_min, y_max)
+    plt.xlabel('Component 1')
+    plt.ylabel('Component 2')
+    fontP = FontProperties()
+    fontP.set_size('small')
+    leg = plt.legend(loc='best', prop=fontP)
+    leg.get_frame().set_alpha(0.5)
+    plt.title(alg_name+': Tic-Tac-Toe projection onto the first 2 principal components')
+    # remove axis spines
+    ax.spines["top"].set_visible(False)  
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)    
+    plt.tight_layout
+    plt.grid()
+    plt.savefig("ttt_cluster_proj_"+alg_name)
+
 if __name__=='__main__':
     np.random.seed(42)
     dataset1 = 'car.data' # 6 attributes 4 classes
@@ -271,22 +373,23 @@ if __name__=='__main__':
     scaler = StandardScaler(with_mean=False)
     X = scaler.fit_transform(x)
     exp3(dataset1, 4, X, y, ns)
-
+    plot_pro_1(X, y, LinearDiscriminantAnalysis ,'LDA')
 
     dataset2 = 'tic-tac-toe.data' # 9 attributes 2 classes
     print("-----------------------------------Dataset 2--------------------------------------")
-    x, y = load_data2(dataset2,attributes=10)
+    x, y = load_data(dataset2,attributes=10)
     x_train, x_test, y_train, y_test = split_train_test(x, y, 0.2)
     dataset2 = dataset2.replace('.', '_')
 
     print("--------------------------Experiment 1------------------------------")
     ks = [2,3,4,5]
-#    clustering(dataset2, x, y, ks)
+    clustering(dataset2, x, y, ks)
 
     print("--------------------------Experiment 2------------------------------")
     ns = [1,2,3,4,5,6,7,8,9]
-#    dimension_reduction(dataset2, x, y, ns)
+    dimension_reduction(dataset2, x, y, ns)
 
     print("--------------------------Experiment 3------------------------------")
     X = scaler.fit_transform(x)
     exp3(dataset2, 2, X, y, ns)
+    plot_pro_2(X, y, PCA, 'PCA')
