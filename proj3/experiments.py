@@ -121,10 +121,8 @@ def dimension_reduction(dataset, x, y, ns):
          'ICA' : rec_errs_ica,
          'Randomized Projection' : rec_errs_rp,
          'Linear Discriminant Analysis' : rec_errs}
-    #print(d)
     df = pd.DataFrame(d)
     df.set_index('Number of components to keep', inplace=True)
-    #print(df)
     styles = ['s-', 'o-', '^-', 'p-']
     fontP = FontProperties()
     fontP.set_size('small')
@@ -135,9 +133,8 @@ def dimension_reduction(dataset, x, y, ns):
     plt.legend(loc='best', prop=fontP)
     plt.savefig(filename)
 
-    eig_vals = sorted(np.linalg.eigvals(pca.get_covariance()), reverse=True)
+    eig_vals = np.linalg.eigvals(pca.get_covariance())
     tot = sum(eig_vals)
-    #var_exp = pca.explained_variance_ratio_
     var_exp = [(i / tot)*100 for i in eig_vals]
     cum_var_exp = np.cumsum(var_exp)
     print('Eigenvalues:')
@@ -161,15 +158,98 @@ def dimension_reduction(dataset, x, y, ns):
 
     ica_kurtos = kurtosis(ica_reduced_X, fisher=False)
     print('ICA kurtosis: {}'.format(ica_kurtos))
+
+#    grp = GaussianRandomProjection(n_components=4)
+#    rec_errs_rp = []
+#    reduced_X = X
+#    for i in range(30):
+#        reduced_X = grp.fit_transform(X)
+#        if i==9 or i==19 or i==29:
+#            pinv = np.linalg.pinv(grp.components_)
+#            reconstructed_X = np.dot(reduced_X, pinv.T)
+#            error = np.linalg.norm((X-reconstructed_X), None)
+#            rec_errs_rp.append(error)
 #    plt.figure()
-#    plt.title('ICA generated principal components: all features in '+dataset)
-#    plt.bar(range(len(ica_kurtos)), ica_kurtos, alpha=0.5, align='center',
-#            label='individual kurtosis')
-#    plt.ylabel('Kurtosis')
-#    plt.xlabel('Principal components')
+#    plt.title('RP generated principal components: 4 features in '+dataset)
+#    plt.bar([10, 20, 30], rec_errs_rp, alpha=0.5, align='center',
+#            label='Reconstruction error')
+#    plt.xlabel('Number of times RP was run')
 #    plt.legend(loc='best')
 #    plt.tight_layout()
-#    plt.savefig(dataset+"_ica_kurt")
+#    plt.savefig(dataset+"_rp")
+
+def exp3(dataset, n_classes, x, y, ns):
+    algorithms = (PCA, FastICA, GaussianRandomProjection, LinearDiscriminantAnalysis)
+    ars_pca_km = []
+    ars_ica_km = []
+    ars_grp_km = []
+    ars_lda_km = []
+    km_arss = (ars_pca_km, ars_ica_km, ars_grp_km, ars_lda_km)
+    ars_pca_em = []
+    ars_ica_em = []
+    ars_grp_em = []
+    ars_lda_em = []
+    em_arss = (ars_pca_em, ars_ica_em, ars_grp_em, ars_lda_em)
+    km = KMeans(n_clusters=n_classes)#, random_state=10, n_init=10)
+    km.fit(x)
+    ars_km = [metrics.adjusted_rand_score(y, km.labels_)] * len(ns)
+    em = GaussianMixture(n_components=n_classes)
+    pred_labels_em = em.fit(x).predict(x)
+    ars_em = [metrics.adjusted_rand_score(y, pred_labels_em)] * len(ns)
+    for n in ns:
+        for (alg, ars) in zip(algorithms, km_arss):
+#            km = KMeans(n_clusters=n_classes)
+            algorithm = alg(n_components=n)
+            reduced_x = algorithm.fit_transform(x, y)
+            pred_y = km.fit_predict(reduced_x)
+            #ars.append(metrics.adjusted_mutual_info_score(y, pred_y))
+            #ars.append(metrics.adjusted_rand_score(y, pred_y))
+            ars.append(metrics.v_measure_score(y, pred_y))
+    d = {'Number of components to keep' : ns,
+         'Unreduced' : ars_km,
+         'PCA' : ars_pca_km,
+         'ICA' : ars_ica_km,
+         'Randomized Projection' : ars_grp_km,
+         'Linear Discriminant Analysis' : ars_lda_km}
+    df = pd.DataFrame(d)
+    df.set_index('Number of components to keep', inplace=True)
+    styles = ['p-', 's-', 'o-', '^-','k--']
+    fontP = FontProperties()
+    fontP.set_size('small')
+    filename = dataset+"_exp3_km"
+    plt.figure()
+    ax = df.plot(title='Kmeans clustering on reduced data for '+dataset, style=styles)
+    ax.set_ylabel("V measure")
+    plt.legend(loc='best', prop=fontP)
+    plt.savefig(filename)
+
+    for n in ns:
+        for (alg, ars) in zip(algorithms, em_arss):
+    #        em = GaussianMixture(n_components=n_classes)
+            algorithm = alg(n_components=n)
+            reduced_x = algorithm.fit_transform(x, y)
+            em.fit(reduced_x)
+            pred_y = em.predict(reduced_x)
+            #ars.append(metrics.adjusted_mutual_info_score(y, pred_y))
+            #ars.append(metrics.adjusted_rand_score(y, pred_y))
+            ars.append(metrics.v_measure_score(y, pred_y))
+    d = {'Number of components to keep' : ns,
+         'Unreduced' : ars_em,
+         'PCA' : ars_pca_em,
+         'ICA' : ars_ica_em,
+         'Randomized Projection' : ars_grp_em,
+         'Linear Discriminant Analysis' : ars_lda_em}
+    df = pd.DataFrame(d)
+    df.set_index('Number of components to keep', inplace=True)
+    styles = ['p-', 's-', 'o-', '^-','k--']
+    fontP = FontProperties()
+    fontP.set_size('small')
+    filename = dataset+"_exp3_em"
+    plt.figure()
+    ax = df.plot(title='EM clustering on reduced data for '+dataset, style=styles)
+    ax.set_ylabel("V measure")
+    plt.legend(loc='best', prop=fontP)
+    plt.savefig(filename)
 
 if __name__=='__main__':
     np.random.seed(42)
@@ -185,7 +265,13 @@ if __name__=='__main__':
 
     print("--------------------------Experiment 2------------------------------")
     ns = [1,2,3,4,5,6]
-    dimension_reduction(dataset1, x, y, ns)
+#    dimension_reduction(dataset1, x, y, ns)
+
+    print("--------------------------Experiment 3------------------------------")
+    scaler = StandardScaler(with_mean=False)
+    X = scaler.fit_transform(x)
+    exp3(dataset1, 4, X, y, ns)
+
 
     dataset2 = 'tic-tac-toe.data' # 9 attributes 2 classes
     print("-----------------------------------Dataset 2--------------------------------------")
@@ -199,5 +285,8 @@ if __name__=='__main__':
 
     print("--------------------------Experiment 2------------------------------")
     ns = [1,2,3,4,5,6,7,8,9]
-    dimension_reduction(dataset2, x, y, ns)
+#    dimension_reduction(dataset2, x, y, ns)
 
+    print("--------------------------Experiment 3------------------------------")
+    X = scaler.fit_transform(x)
+    exp3(dataset2, 2, X, y, ns)
