@@ -390,16 +390,10 @@ def exp4(dataset, x_train, x_test, y_train, y_test, ns):
     df_train_times.set_index('Number of components to keep', inplace=True)
     df_test_times = pd.DataFrame(d_test_times)
     df_test_times.set_index('Number of components to keep', inplace=True)
-    #print(df_train_errors)
-    #print(df_test_errors)
-    #print(df_train_times)
-    #print(df_test_times)
-
     styles = ['p-', 's-', 'o-', '^-','k--']
     filename = dataset+"_exp4"
     plt.figure(figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
     fig, axes = plt.subplots(nrows=2, ncols=2)
-
     fontP = FontProperties()
     fontP.set_size('xx-small')
     df_train_errors.plot(ax=axes[0,0], style=styles)
@@ -410,17 +404,113 @@ def exp4(dataset, x_train, x_test, y_train, y_test, ns):
     axes[1,0].set_ylabel("Training Time")
     df_test_times.plot(ax=axes[1,1], style=styles)
     axes[1,1].set_ylabel("Testing Time")
-
     axes[0,0].legend_.set_visible(False)
     axes[0,1].legend_.set_visible(False)
     axes[1,1].legend_.set_visible(False)
     axes[1,0].legend_.set_visible(False)
     handles, labels = axes[0,0].get_legend_handles_labels()
     plt.figlegend(handles=handles, labels=labels, loc='upper right', prop=fontP)
-
     fig.tight_layout()
     fig.subplots_adjust(top=0.85)
     plt.suptitle('NN on Reduced Data for '+dataset)
+    plt.savefig(filename)
+
+def exp5(dataset, x_train, x_test, y_train, y_test, c_alg, c_alg_name, n_classes=4, ns=[1,2,3,4,5,6]):
+    algorithms = (PCA, FastICA, GaussianRandomProjection, LinearDiscriminantAnalysis)
+    alg_names = ('PCA', 'ICA', 'Randomized Projection', 'Linear Discriminant Analysis')
+    d_train_errors = {'Number of components to keep' : ns,
+         'Unreduced' : [],
+         'PCA' : [],
+         'ICA' : [],
+         'Randomized Projection' : [],
+         'Linear Discriminant Analysis' : []}
+    d_test_errors = {'Number of components to keep' : ns,
+         'Unreduced' : [],
+         'PCA' : [],
+         'ICA' : [],
+         'Randomized Projection' : [],
+         'Linear Discriminant Analysis' : []}
+    d_train_times = {'Number of components to keep' : ns,
+         'Unreduced' : [],
+         'PCA' : [],
+         'ICA' : [],
+         'Randomized Projection' : [],
+         'Linear Discriminant Analysis' : []}
+    d_test_times = {'Number of components to keep' : ns,
+         'Unreduced' : [],
+         'PCA' : [],
+         'ICA' : [],
+         'Randomized Projection' : [],
+         'Linear Discriminant Analysis' : []}
+    c_algobj = c_alg(n_clusters=n_classes) if c_alg_name!='EM' else c_alg(n_components=n_classes)
+    pred_labels_train = c_algobj.fit(x_train).predict(x_train)
+    pred_labels_train = np.reshape(pred_labels_train, (len(x_train),1))
+    c_x_train = np.hstack((x_train, pred_labels_train))
+    pred_labels_test = c_algobj.fit(x_test).predict(x_test)
+    pred_labels_test = np.reshape(pred_labels_test, (len(x_test),1))
+    c_x_test = np.hstack((x_test, pred_labels_test))
+    nn = MLPClassifier()
+    trstart_time = time.time()
+    nn.fit(c_x_train, y_train)
+    d_train_times['Unreduced'] = [time.time() - trstart_time] * len(ns)
+    tsstart_time = time.time()
+    pred_test = nn.predict(c_x_test)
+    d_test_times['Unreduced'] = [time.time()-tsstart_time] * len(ns)
+    pred_train= nn.predict(c_x_train)
+    d_train_errors['Unreduced'] = [metrics.accuracy_score(y_train, pred_train)] * len(ns)
+    d_test_errors['Unreduced'] =[metrics.accuracy_score(y_test, pred_test)] * len(ns)
+    for (alg, name) in zip(algorithms, alg_names):
+        for n in ns:
+            algorithm = alg(n_components=n)
+            reduced_X = algorithm.fit_transform(x_train, y_train)
+            reduced_X_tst = algorithm.fit_transform(x_test, y_test)
+            pred_labels_train = c_algobj.fit(reduced_X).predict(reduced_X)
+            pred_labels_train = np.reshape(pred_labels_train, (len(reduced_X),1))
+            pred_labels_test = c_algobj.fit(reduced_X_tst).predict(reduced_X_tst)
+            pred_labels_test = np.reshape(pred_labels_test, (len(reduced_X_tst),1))
+            reduced_x = np.hstack((reduced_X, pred_labels_train))
+            reduced_x_tst = np.hstack((reduced_X_tst, pred_labels_test))
+            nn = MLPClassifier()
+            trstart_time = time.time()
+            nn.fit(reduced_x, y_train)
+            d_train_times[name].append(time.time() - trstart_time)
+            tsstart_time = time.time()
+            pred_test = nn.predict(reduced_x_tst)
+            d_test_times[name].append(time.time()-tsstart_time)
+            pred_train= nn.predict(reduced_x)
+            d_train_errors[name].append(metrics.accuracy_score(y_train, pred_train))
+            d_test_errors[name].append(metrics.accuracy_score(y_test, pred_test))
+    df_train_errors = pd.DataFrame(d_train_errors)
+    df_train_errors.set_index('Number of components to keep', inplace=True)
+    df_test_errors = pd.DataFrame(d_test_errors)
+    df_test_errors.set_index('Number of components to keep', inplace=True)
+    df_train_times = pd.DataFrame(d_train_times)
+    df_train_times.set_index('Number of components to keep', inplace=True)
+    df_test_times = pd.DataFrame(d_test_times)
+    df_test_times.set_index('Number of components to keep', inplace=True)
+    styles = ['p-', 's-', 'o-', '^-','k--']
+    filename = dataset+"_exp5_"+c_alg_name
+    plt.figure(figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    fontP = FontProperties()
+    fontP.set_size('xx-small')
+    df_train_errors.plot(ax=axes[0,0], style=styles)
+    axes[0,0].set_ylabel("Training Accuracy")
+    df_test_errors.plot(ax=axes[0,1], style=styles)
+    axes[0,1].set_ylabel("Testing Accuracy")
+    df_train_times.plot(ax=axes[1,0], style=styles)
+    axes[1,0].set_ylabel("Training Time")
+    df_test_times.plot(ax=axes[1,1], style=styles)
+    axes[1,1].set_ylabel("Testing Time")
+    axes[0,0].legend_.set_visible(False)
+    axes[0,1].legend_.set_visible(False)
+    axes[1,1].legend_.set_visible(False)
+    axes[1,0].legend_.set_visible(False)
+    handles, labels = axes[0,0].get_legend_handles_labels()
+    plt.figlegend(handles=handles, labels=labels, loc='upper right', prop=fontP)
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.85)
+    plt.suptitle('NN on '+c_alg_name+'-Clustered Reduced Data for '+dataset)
     plt.savefig(filename)
 
 if __name__=='__main__':
@@ -447,6 +537,12 @@ if __name__=='__main__':
 #    plot_pro_1(X, y, LinearDiscriminantAnalysis ,'LDA')
 #    plot_pro_1(X, y, PCA ,'PCA')
 
+    print("-----------------------------------Experiment 4--------------------------------------")
+#    exp4(dataset1, x_train, x_test, y_train, y_test, ns) 
+
+    print("-----------------------------------Experiment 5--------------------------------------")
+    exp5(dataset1, x_train, x_test, y_train, y_test, KMeans, 'Kmeans', n_classes=4, ns=ns)
+#    exp5(dataset1, x_train, x_test, y_train, y_test, GaussianMixture, 'EM', n_classes=4, ns=ns)
 
     dataset2 = 'tic-tac-toe.data' # 9 attributes 2 classes
     print("-----------------------------------Dataset 2--------------------------------------")
@@ -470,7 +566,3 @@ if __name__=='__main__':
 #    plot_pro_2(X, y, GaussianRandomProjection, 'Randomized Projection')
 
     
-    print("-----------------------------------Experiment 4--------------------------------------")
-    X_train = scaler.fit_transform(x_train)
-    X_test = scaler.fit_transform(x_test)
-    exp4(dataset2, x_train, x_test, y_train, y_test, ns) 
