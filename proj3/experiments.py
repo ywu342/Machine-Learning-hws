@@ -16,29 +16,6 @@ from sklearn.decomposition import FastICA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.mixture import GaussianMixture
 
-def plot_curves(title, df, xlabel, ylabel, styles, filename, flag=False, dotline=0, line_label='', show100=False):
-    colors = plt.cm.rainbow(np.linspace(1, 0, len(Y)))
-    plt.figure()
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    if (flag):
-        plt.xticks(x, x)
-    if (dotline!=0):
-        tmp = np.zeros(len(x))
-        tmp[:] = dotline
-        plt.plot(x, tmp, color='black', label=line_label, lw=0.7, ls='dashed')
-        tmp100 = np.zeros(len(x))
-        tmp100[:] = 100
-        if (show100):
-            plt.plot(x, tmp100, color='black', label='train accuracy of raw data', lw=0.7, ls='dotted')
-#    for (y, label, c) in zip(y, curve_labels, colors):
-#        plt.plot(x, y, color=c, label=label, lw=2.0)
-    df.plot()
-    plt.legend(loc='best')
-    plt.savefig(filename)
-    return plt
-
 def clustering(dataset, x, y, ks):
     ars_km = []
     ss_km = []
@@ -524,25 +501,25 @@ if __name__=='__main__':
     
     print("--------------------------Experiment 1------------------------------")
     ks = [2,3,4,5,6,7]
-#    clustering(dataset1, x, y, ks)
+    clustering(dataset1, x, y, ks)
 
     print("--------------------------Experiment 2------------------------------")
     ns = [1,2,3,4,5,6]
-#    dimension_reduction(dataset1, x, y, ns)
+    dimension_reduction(dataset1, x, y, ns)
 
     print("--------------------------Experiment 3------------------------------")
     scaler = StandardScaler(with_mean=False)
     X = scaler.fit_transform(x)
-#    exp3(dataset1, 4, X, y, ns)
-#    plot_pro_1(X, y, LinearDiscriminantAnalysis ,'LDA')
-#    plot_pro_1(X, y, PCA ,'PCA')
+    exp3(dataset1, 4, X, y, ns)
+    plot_pro_1(X, y, LinearDiscriminantAnalysis ,'LDA')
+    plot_pro_1(X, y, PCA ,'PCA')
 
     print("-----------------------------------Experiment 4--------------------------------------")
-#    exp4(dataset1, x_train, x_test, y_train, y_test, ns) 
+    exp4(dataset1, x_train, x_test, y_train, y_test, ns) 
 
     print("-----------------------------------Experiment 5--------------------------------------")
     exp5(dataset1, x_train, x_test, y_train, y_test, KMeans, 'Kmeans', n_classes=4, ns=ns)
-#    exp5(dataset1, x_train, x_test, y_train, y_test, GaussianMixture, 'EM', n_classes=4, ns=ns)
+    exp5(dataset1, x_train, x_test, y_train, y_test, GaussianMixture, 'EM', n_classes=4, ns=ns)
 
     dataset2 = 'tic-tac-toe.data' # 9 attributes 2 classes
     print("-----------------------------------Dataset 2--------------------------------------")
@@ -553,16 +530,14 @@ if __name__=='__main__':
 
     print("--------------------------Experiment 1------------------------------")
     ks = [2,3,4,5]
-#    clustering(dataset2, x, y, ks)
+    clustering(dataset2, x, y, ks)
 
     print("--------------------------Experiment 2------------------------------")
     ns = [1,2,3,4,5,6,7,8,9]
-#    dimension_reduction(dataset2, x, y, ns)
+    dimension_reduction(dataset2, x, y, ns)
 
     print("--------------------------Experiment 3------------------------------")
     X = scaler.fit_transform(x)
-#    exp3(dataset2, 2, X, y, ns)
-#    plot_pro_2(X, y, PCA, 'PCA')
-#    plot_pro_2(X, y, GaussianRandomProjection, 'Randomized Projection')
-
-    
+    exp3(dataset2, 2, X, y, ns)
+    plot_pro_2(X, y, PCA, 'PCA')
+    plot_pro_2(X, y, GaussianRandomProjection, 'Randomized Projection')
